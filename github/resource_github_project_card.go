@@ -43,10 +43,10 @@ func resourceGithubProjectCard() *schema.Resource {
 }
 
 func resourceGithubProjectCardCreate(d *schema.ResourceData, meta interface{}) error {
-	err := checkOrganization(meta)
-	if err != nil {
-		return err
-	}
+	// err := checkOrganization(meta)
+	// if err != nil {
+	// 	return err
+	// }
 
 	columnIDStr := d.Get("column_id").(string)
 	columnID, err := strconv.ParseInt(columnIDStr, 10, 64)

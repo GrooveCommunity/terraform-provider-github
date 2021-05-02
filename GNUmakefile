@@ -2,6 +2,12 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=github
+HOSTNAME=registry.terraform.io
+NAMESPACE=hashicorp
+NAME=github
+VERSION=5.0.0
+BINARY=terraform-provider-${NAME}_v${VERSION}
+OS_ARCH?=linux_amd64
 
 default: build
 
@@ -10,7 +16,12 @@ tools:
 	GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
 build: fmtcheck
-	go install
+	go build -o ${BINARY}
+
+# https://github.com/hashicorp/terraform/issues/25906
+install: build
+	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
+	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
 
 fmt:
 	@echo "==> Fixing source code with gofmt..."
