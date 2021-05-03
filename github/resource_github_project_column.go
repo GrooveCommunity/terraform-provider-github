@@ -44,10 +44,6 @@ func resourceGithubProjectColumn() *schema.Resource {
 }
 
 func resourceGithubProjectColumnCreate(d *schema.ResourceData, meta interface{}) error {
-	// err := checkOrganization(meta)
-	// if err != nil {
-	// 	return err
-	// }
 
 	client := meta.(*Owner).v3client
 

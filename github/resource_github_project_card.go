@@ -26,9 +26,19 @@ func resourceGithubProjectCard() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"content_id": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"note"},
+			},
+			"content_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Default:  "Issue",
+			},
 			"note": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"etag": {
 				Type:     schema.TypeString,
@@ -43,10 +53,6 @@ func resourceGithubProjectCard() *schema.Resource {
 }
 
 func resourceGithubProjectCardCreate(d *schema.ResourceData, meta interface{}) error {
-	// err := checkOrganization(meta)
-	// if err != nil {
-	// 	return err
-	// }
 
 	columnIDStr := d.Get("column_id").(string)
 	columnID, err := strconv.ParseInt(columnIDStr, 10, 64)
@@ -54,9 +60,23 @@ func resourceGithubProjectCardCreate(d *schema.ResourceData, meta interface{}) e
 		return unconvertibleIdErr(columnIDStr, err)
 	}
 
+	contentIDStr := d.Get("content_id").(string)
+	contentID, err := strconv.ParseInt(contentIDStr, 10, 64)
+	if err != nil {
+		return unconvertibleIdErr(contentIDStr, err)
+	}
+
 	log.Printf("[DEBUG] Creating project card note in column ID: %d", columnID)
 	client := meta.(*Owner).v3client
-	options := github.ProjectCardOptions{Note: d.Get("note").(string)}
+	options := github.ProjectCardOptions{}
+
+	if contentID > 0 {
+		options.ContentID = contentID
+		options.ContentType = d.Get("content_type").(string)
+	} else {
+		options.Note = d.Get("note").(string)
+	}
+
 	ctx := context.Background()
 	card, _, err := client.Projects.CreateProjectCard(ctx, columnID, &options)
 	if err != nil {
@@ -94,8 +114,20 @@ func resourceGithubProjectCardRead(d *schema.ResourceData, meta interface{}) err
 	// FIXME: Remove URL parsing if a better option becomes available
 	columnURL := card.GetColumnURL()
 	columnIDStr := strings.TrimPrefix(columnURL, client.BaseURL.String()+`projects/columns/`)
-	if err != nil {
-		return unconvertibleIdErr(columnIDStr, err)
+
+	contentURL := card.GetContentURL()
+	contentIDSlice := strings.Split(strings.TrimPrefix(contentURL, client.BaseURL.String()+`repos/`), "/")
+
+	if len(contentIDSlice) == 4 {
+		contentIDStr := contentIDSlice[3]
+		contentType := strings.ToLower(contentIDSlice[2])
+
+		if contentType == "issues" {
+			contentType = "issue"
+		}
+
+		d.Set("content_id", contentIDStr)
+		d.Set("content_type", contentType)
 	}
 
 	d.Set("note", card.GetNote())
@@ -109,12 +141,24 @@ func resourceGithubProjectCardUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*Owner).v3client
 	cardID := d.Get("card_id").(int)
 
-	log.Printf("[DEBUG] Updating project Card: %s", d.Id())
-	options := github.ProjectCardOptions{
-		Note: d.Get("note").(string),
+	contentIDStr := d.Get("content_id").(string)
+	contentID, err := strconv.ParseInt(contentIDStr, 10, 64)
+	if err != nil {
+		return unconvertibleIdErr(contentIDStr, err)
 	}
+
+	log.Printf("[DEBUG] Updating project Card: %s", d.Id())
+	options := github.ProjectCardOptions{}
+
+	if contentID > 0 {
+		options.ContentID = contentID
+		options.ContentType = d.Get("content_type").(string)
+	} else {
+		options.Note = d.Get("note").(string)
+	}
+
 	ctx := context.WithValue(context.Background(), ctxId, d.Id())
-	_, _, err := client.Projects.UpdateProjectCard(ctx, int64(cardID), &options)
+	_, _, err = client.Projects.UpdateProjectCard(ctx, int64(cardID), &options)
 	if err != nil {
 		return err
 	}
