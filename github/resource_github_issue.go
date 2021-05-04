@@ -162,7 +162,6 @@ func resourceGithubIssueRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("labels", expandIssueLabels(issue.Labels))
-	d.Set("labels", expandIssueLabels(issue.Labels))
 	d.Set("assigness", expandIssueUsers(issue.Assignees))
 	d.Set("state", issue.GetState())
 	d.Set("body", issue.GetBody())
@@ -230,15 +229,15 @@ func resourceGithubIssueDelete(d *schema.ResourceData, meta interface{}) error {
 func expandIssueUsers(users []*github.User) []string {
 	usernames := make([]string, len(users))
 	for i, user := range users {
-		usernames[i] = github.Stringify(user.Login)
+		usernames[i] = *user.Login
 	}
 	return usernames
 }
 
 func expandIssueLabels(labels []*github.Label) []string {
 	labelsNames := make([]string, len(labels))
-	for i, user := range labels {
-		labelsNames[i] = github.Stringify(user.Name)
+	for i, label := range labels {
+		labelsNames[i] = *label.Name
 	}
 	return labelsNames
 }

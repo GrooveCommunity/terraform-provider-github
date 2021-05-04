@@ -119,14 +119,12 @@ func resourceGithubProjectCardRead(d *schema.ResourceData, meta interface{}) err
 	contentIDSlice := strings.Split(strings.TrimPrefix(contentURL, client.BaseURL.String()+`repos/`), "/")
 
 	if len(contentIDSlice) == 4 {
-		contentIDStr := contentIDSlice[3]
 		contentType := strings.ToLower(contentIDSlice[2])
 
 		if contentType == "issues" {
-			contentType = "issue"
+			contentType = "Issue"
 		}
 
-		d.Set("content_id", contentIDStr)
 		d.Set("content_type", contentType)
 	}
 
